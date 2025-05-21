@@ -1,0 +1,7 @@
+# .gitignore 파일
+
+# VirtualBox 디스크 이미지 파일
+*.vdi
+
+# Vagrant 디렉토리
+.vagrant/
