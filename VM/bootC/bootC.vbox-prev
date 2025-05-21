@@ -6,14 +6,15 @@
 ** Use VBoxManage or the VirtualBox Manager GUI to make changes.
 -->
 <VirtualBox xmlns="http://www.virtualbox.org/" version="1.19-windows">
-  <Machine uuid="{8791ee66-8e80-4096-a9d1-fce5625275d0}" name="bootC" OSType="RedHat_64" snapshotFolder="Snapshots" lastStateChange="2025-05-21T12:26:17Z">
+  <Machine uuid="{8791ee66-8e80-4096-a9d1-fce5625275d0}" name="bootC" OSType="RedHat_64" snapshotFolder="Snapshots" lastStateChange="2025-05-21T14:40:51Z">
     <MediaRegistry>
       <HardDisks>
         <HardDisk uuid="{a1c83066-87bd-4382-8e99-e00006215ac4}" location="C:/SBU/CloudClub_bootC/IaC/bootc-webserver.vdi" format="VDI" type="Normal"/>
       </HardDisks>
     </MediaRegistry>
     <ExtraData>
-      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="482,250,1602,1048"/>
+      <ExtraDataItem name="GUI/LastCloseAction" value="PowerOff"/>
+      <ExtraDataItem name="GUI/LastNormalWindowPosition" value="554,-944,1280,837"/>
     </ExtraData>
     <Hardware>
       <CPU count="2">
@@ -44,7 +45,7 @@
       <RTC localOrUTC="UTC"/>
       <Clipboard/>
       <GuestProperties>
-        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="ko_KR" timestamp="1747831351399444200" flags="RDONLYGUEST"/>
+        <GuestProperty name="/VirtualBox/HostInfo/GUI/LanguageID" value="ko_KR" timestamp="1747838453144085900" flags="RDONLYGUEST"/>
         <GuestProperty name="/VirtualBox/HostInfo/VBoxRev" value="159484" timestamp="1747830121447648502" flags="TRANSIENT, RDONLYGUEST"/>
         <GuestProperty name="/VirtualBox/HostInfo/VBoxVer" value="7.0.12" timestamp="1747830121447648500" flags="TRANSIENT, RDONLYGUEST"/>
         <GuestProperty name="/VirtualBox/HostInfo/VBoxVerExt" value="7.0.12" timestamp="1747830121447648501" flags="TRANSIENT, RDONLYGUEST"/>
