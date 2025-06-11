@@ -1,0 +1,251 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+    # Ubuntu 22.04 LTS (Jammy Jellyfish) 이미지 사용
+    config.vm.box = "ubuntu/jammy64"
+    
+    # VM 설정
+    config.vm.provider "virtualbox" do |vb|
+      # VM 이름 설정
+      vb.name = "Ubuntu-Fedora-KDE-bootC"
+      # 메모리 크기 설정 (GUI 빌드를 위해 8GB)
+      vb.memory = 8192
+      # CPU 코어 수 설정 (빌드 속도 향상을 위해 4코어)
+      vb.cpus = 4
+      # 비디오 메모리 설정
+      vb.customize ["modifyvm", :id, "--vram", "128"]
+    end
+  
+    # 포트 포워딩 설정 (필요시)
+    config.vm.network "forwarded_port", guest: 22, host: 2222
+  
+    # VM 프로비저닝 스크립트
+    config.vm.provision "shell", inline: <<-SHELL
+      # 패키지 목록 업데이트
+      apt-get update
+      
+      # 필요한 기본 패키지 설치
+      apt-get install -y podman git curl qemu-utils
+      
+      # Fedora bootC KDE 빌드 준비
+      sudo -u vagrant mkdir -p /home/vagrant/fedora-bootc-kde
+      cd /home/vagrant/fedora-bootc-kde
+      
+      # Fedora 40 bootC 기본 이미지 가져오기
+      sudo podman pull quay.io/fedora/fedora-bootc:40
+      
+      # Containerfile 생성 (KDE 환경용)
+      cat > /home/vagrant/fedora-bootc-kde/Containerfile << 'EOL'
+  FROM quay.io/fedora/fedora-bootc:40
+  
+  # DNF를 더 빠르게 설정
+  RUN echo 'fastestmirror=1' >> /etc/dnf/dnf.conf && \\
+      echo 'max_parallel_downloads=10' >> /etc/dnf/dnf.conf && \\
+      echo 'countme=false' >> /etc/dnf/dnf.conf
+  
+  # 시스템 업데이트 및 KDE 데스크탑 환경 설치
+  RUN dnf -y update && \\
+      dnf -y groupinstall "KDE Plasma Workspaces" && \\
+      dnf -y install kde-settings-pulseaudio plasma-drkonqi
+  
+  # KDE 추가 애플리케이션 설치
+  RUN dnf -y install \\
+      konsole \\
+      dolphin \\
+      kate \\
+      spectacle \\
+      kcalc \\
+      ark \\
+      okular \\
+      gwenview \\
+      kwrite \\
+      plasma-systemmonitor
+  
+  # 기본 개발 도구 및 유틸리티 설치
+  RUN dnf -y install \\
+      git \\
+      curl \\
+      wget \\
+      vim \\
+      nano \\
+      htop \\
+      tree \\
+      unzip \\
+      tar \\
+      gzip \\
+      firefox
+  
+  # Google Chrome 저장소 추가 및 설치
+  RUN dnf -y install dnf-plugins-core && \\
+      cat > /etc/yum.repos.d/google-chrome.repo << 'CHROME_REPO'
+  [google-chrome]
+  name=google-chrome
+  baseurl=https://dl.google.com/linux/chrome/rpm/stable/x86_64
+  enabled=1
+  gpgcheck=1
+  gpgkey=https://dl.google.com/linux/linux_signing_key.pub
+  CHROME_REPO
+  
+  RUN dnf -y install google-chrome-stable
+  
+  # Visual Studio Code 저장소 추가 및 설치
+  RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \\
+      cat > /etc/yum.repos.d/vscode.repo << 'VSCODE_REPO'
+  [code]
+  name=Visual Studio Code
+  baseurl=https://packages.microsoft.com/yumrepos/vscode
+  enabled=1
+  gpgcheck=1
+  gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+  VSCODE_REPO
+  
+  RUN dnf -y install code
+  
+  # 개발에 유용한 추가 패키지 설치
+  RUN dnf -y install \\
+      nodejs \\
+      npm \\
+      python3 \\
+      python3-pip \\
+      java-11-openjdk \\
+      java-11-openjdk-devel \\
+      gcc \\
+      gcc-c++ \\
+      make \\
+      cmake \\
+      gdb
+  
+  # 폰트 설치 (한글 지원)
+  RUN dnf -y install \\
+      google-noto-fonts-common \\
+      google-noto-cjk-fonts \\
+      google-noto-emoji-fonts \\
+      liberation-fonts \\
+      dejavu-fonts-common \\
+      dejavu-sans-fonts \\
+      dejavu-serif-fonts \\
+      dejavu-sans-mono-fonts
+  
+  # SDDM (KDE Display Manager) 활성화
+  RUN systemctl enable sddm
+  
+  # 그래픽 타겟으로 기본 부팅 설정
+  RUN systemctl set-default graphical.target
+  
+  # 방화벽 설정
+  RUN systemctl enable firewalld
+  
+  # NetworkManager 활성화 (GUI에서 네트워크 관리를 위해)
+  RUN systemctl enable NetworkManager
+  
+  # 부팅 인수 설정을 위한 디렉토리 생성
+  RUN mkdir -p /usr/lib/bootc/kargs.d
+  
+  # 부팅 인수 설정 (그래픽 모드)
+  RUN echo 'kargs = ["rhgb", "quiet"]' > /usr/lib/bootc/kargs.d/kcmdline.toml
+  
+  # KDE 기본 설정
+  RUN mkdir -p /etc/skel/.config/plasma-workspace/env && \\
+      mkdir -p /etc/skel/Desktop /etc/skel/Documents /etc/skel/Downloads
+  
+  # Plasma 패널 기본 설정 (작업표시줄에 자주 사용하는 앱 추가)
+  RUN mkdir -p /etc/skel/.config && \\
+      cat > /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc << 'PLASMA_CONFIG'
+  [ActionPlugins][0]
+  MiddleButton;NoModifier=org.kde.paste
+  RightButton;NoModifier=org.kde.contextmenu
+  
+  [Containments][1]
+  activityId=
+  formfactor=2
+  immutability=1
+  lastScreen=0
+  location=4
+  plugin=org.kde.panel
+  wallpaperplugin=org.kde.image
+  
+  [Containments][1][Applets][2]
+  immutability=1
+  plugin=org.kde.plasma.kickoff
+  
+  [Containments][1][Applets][3]
+  immutability=1
+  plugin=org.kde.plasma.icontasks
+  
+  [Containments][1][Applets][4]
+  immutability=1
+  plugin=org.kde.plasma.systemtray
+  
+  [Containments][1][Applets][5]
+  immutability=1
+  plugin=org.kde.plasma.digitalclock
+  PLASMA_CONFIG
+  
+  # 임시 파일 정리
+  RUN dnf clean all && \\
+      rm -rf /var/cache/dnf/* && \\
+      rm -rf /tmp/* && \\
+      rm -rf /var/tmp/*
+  
+  # 환경 변수 설정
+  ENV DISPLAY=:0
+  ENV XDG_RUNTIME_DIR=/run/user/1000
+  
+  # 사용자 정의 환경 설정을 위한 스크립트
+  RUN cat > /etc/profile.d/custom-env.sh << 'EOF'
+  # 기본 에디터 설정
+  export EDITOR=code
+  export VISUAL=code
+  
+  # Git 기본 설정 도움말
+  alias git-setup='echo "Git 설정: git config --global user.name \"Your Name\" && git config --global user.email \"your.email@example.com\""'
+  
+  # 개발 환경 별칭
+  alias ll='ls -alF'
+  alias la='ls -A'
+  alias l='ls -CF'
+  alias ..='cd ..'
+  alias ...='cd ../..'
+  EOF
+  
+  # 부팅 메시지 사용자 정의
+  RUN cat > /etc/motd << 'EOF'
+  ====================================================
+    Fedora 40 KDE Plasma Development Environment
+    Built with bootC
+  ====================================================
+  Installed Applications:
+    - KDE Plasma Desktop Environment
+    - Visual Studio Code
+    - Google Chrome & Firefox
+    - Git and development tools
+    
+  To get started:
+    - Login with your configured user account
+    - Open terminal: Ctrl+Alt+T (or Konsole)
+    - Launch VS Code: code
+    - Launch Chrome: google-chrome
+  ====================================================
+  EOF
+  EOL
+      
+      # 출력 디렉토리 생성
+      mkdir -p /home/vagrant/fedora-bootc-kde/output
+      
+      # 파일 소유권 변경
+      chown -R vagrant:vagrant /home/vagrant/fedora-bootc-kde
+      
+      # 완료 메시지 출력
+      echo "==================================================================="
+      echo "Fedora 40 KDE bootC 환경 설정이 완료되었습니다."
+      echo ""
+      echo "다음 단계:"
+      echo "1. SSH로 접속: vagrant ssh"
+      echo "2. 빌드 시작: cd ~/fedora-bootc-kde && sudo podman build -t fedora-kde-bootc ."
+      echo "3. 빌드 완료 후 디스크 이미지 생성"
+      echo ""
+      echo "주의: GUI 환경 빌드는 30분~1시간 정도 소요될 수 있습니다."
+      echo "==================================================================="
+    SHELL
+  end
