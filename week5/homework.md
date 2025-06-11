@@ -151,15 +151,6 @@ bootc는 컨테이너 이미지를 사용하여 운영체제를 관리하는 도
 
 핵심은 모든 과정이 코드로 정의되고 자동으로 실행된다는 점이다.
 
-```mermaid
-flowchart TD
-    dev[개발자 PC<br/>Containerfile 수정 & Push] --> github[GitHub Repo<br/>Actions Workflow 트리거]
-    github --> runner[Self-hosted Runner<br/>bootc Build 실행]
-    runner --> image[bootc Image Builder<br/>이미지 푸시]
-    image --> registry[Container Registry<br/>Harbor/DockerHub<br/>이미지 저장]
-    registry --> target[Target System<br/>bootc upgrade 자동 적용]
-```
-
 ---
 
 # 결론
