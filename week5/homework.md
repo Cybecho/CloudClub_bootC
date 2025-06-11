@@ -1,4 +1,5 @@
 # bootC + GitHub Actions Workflow + GitHub Self Hosted Runner ?
+[ppt보기](https://docs.google.com/presentation/d/1gDvuMkLPdsOv68zSOi-mNTewdUSbYvFc/edit?usp=sharing&ouid=103204687067264269924&rtpof=true&sd=true)
 
 ## 무엇이 헷갈렸는가?
 
